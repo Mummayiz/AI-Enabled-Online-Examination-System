@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import StudentRegister from './pages/StudentRegister';
 import AdminRegister from './pages/AdminRegister';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import AdminDashboard from './pages/AdminDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import TakeExam from './pages/TakeExam';
@@ -42,6 +44,8 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to={user.role === 'admin' ? '/admin' : '/student'} /> : <Login />} />
       <Route path="/register/student" element={user ? <Navigate to="/student" /> : <StudentRegister />} />
       <Route path="/register/admin" element={user ? <Navigate to="/admin" /> : <AdminRegister />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       
       <Route
         path="/admin/*"

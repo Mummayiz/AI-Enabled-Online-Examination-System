@@ -116,3 +116,68 @@ def logout():
 @login_required
 def get_current_user():
     return jsonify({'user': current_user.to_dict()}), 200
+
+@auth_bp.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    """Request a password reset token"""
+    try:
+        data = request.get_json()
+        
+        if not data.get('email'):
+            return jsonify({'error': 'Email is required'}), 400
+        
+        user = User.query.filter_by(email=data['email']).first()
+        
+        # Always return success to prevent email enumeration
+        if not user:
+            return jsonify({'message': 'If the email exists, a reset link has been sent'}), 200
+        
+        # Generate reset token
+        token = user.generate_reset_token()
+        db.session.commit()
+        
+        # In production, send email here
+        # For development, we'll return the token (NEVER do this in production!)
+        print(f"\n{'='*50}")
+        print(f"PASSWORD RESET TOKEN for {user.email}")
+        print(f"Token: {token}")
+        print(f"Use this token to reset password")
+        print(f"{'='*50}\n")
+        
+        return jsonify({
+            'message': 'If the email exists, a reset link has been sent',
+            'token': token  # Only for development! Remove in production
+        }), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@auth_bp.route('/reset-password', methods=['POST'])
+def reset_password():
+    """Reset password using a valid token"""
+    try:
+        data = request.get_json()
+        
+        if not data.get('token') or not data.get('password'):
+            return jsonify({'error': 'Token and new password are required'}), 400
+        
+        if len(data['password']) < 6:
+            return jsonify({'error': 'Password must be at least 6 characters'}), 400
+        
+        # Find user by reset token
+        user = User.query.filter_by(reset_token=data['token']).first()
+        
+        if not user or not user.verify_reset_token(data['token']):
+            return jsonify({'error': 'Invalid or expired reset token'}), 400
+        
+        # Update password and clear token
+        user.set_password(data['password'])
+        user.clear_reset_token()
+        db.session.commit()
+        
+        return jsonify({'message': 'Password has been reset successfully'}), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
